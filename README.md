@@ -5,13 +5,23 @@ VDFiles-Mapper(*Virtual Desktop Files Mapper*) is a lightweight AutoHotkey v2 sc
 
 ## 📂 How It Works
 
-VDFiles-Mapper utilizes a Repository-to-View logic:
+VDFiles-Mapper utilizes a **Repository-to-View** logic with a built-in filter for global items:
 
-1. **The Repository** (e.g. `D:\DesktopData`): You store your actual folders here (e.g., `Work`, `Gaming`, `Thesis`).
+1. **The Repository** (D:\DesktopData): This is your central storage.
 
-2. **The Mapping**: When you switch to a Virtual Desktop named "Work," the script identifies the matching folder in your repository and "projects" its content onto your actual desktop as symlinks.
+2. **Mapping Logic**:
 
-3. **The Cleanup**: Upon switching, the script identifies and removes symlinks from the previous session, keeping the desktop pristine.
+   - **Desktop-Specific Folders**: Any folder in the repository whose name **matches** an active Virtual Desktop (e.g., a folder named "Work" for a desktop named "Work") is considered a Private Container. Its contents are linked to the desktop.
+
+   - **Global/Public Items**: Any file or folder in the repository whose name **does not match** any existing Virtual Desktop name is treated as a Global Item. These items will appear on every virtual desktop.
+
+3. **The Mapping Process**: When switching to a desktop (e.g., "Work"):
+
+   - The script links all **Global Items** first.
+
+   - Then, it "projects" the **contents** of the "Work" folder specifically.
+
+4. The Cleanup: Upon switching, the script safely removes only the symlinks, leaving the source files in the repository and any native files on your desktop untouched.
 
 ## 🛠️ Quick Start
 
