@@ -1,4 +1,4 @@
-# VDFiles-Mapper
+# VDFiles-Mapper <img src="./lib/app.ico" alt="VDFiles-Mapper" width="4%">
 
 ## 🌟 Introduction
 VDFiles-Mapper(*Virtual Desktop Files Mapper*) is a lightweight AutoHotkey v2 script for Windows 11, allowing you to have a unique set of files and folders for every virtual desktop.

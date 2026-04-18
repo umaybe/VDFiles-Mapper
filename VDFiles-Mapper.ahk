@@ -3,7 +3,11 @@
 
 Persistent()
 SetWorkingDir(A_ScriptDir)
-TraySetIcon("shell32.dll", 162)
+
+IconPath := A_ScriptDir . "\lib\app.ico"
+if FileExist(IconPath) {
+    TraySetIcon(IconPath)
+}
 
 VDA_PATH := A_ScriptDir . "\lib\VirtualDesktopAccessor.dll"
 hVirtualDesktopAccessor := DllCall(
