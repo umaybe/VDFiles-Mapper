@@ -15,6 +15,8 @@ VDFiles-Mapper utilizes a **Repository-to-View** logic with a built-in filter fo
 
    - **Global/Public Items**: Any file or folder in the repository whose name **does not match** any existing Virtual Desktop name is treated as a Global Item. These items will appear on every virtual desktop.
 
+   - **Smart Linking**: The script automatically detects .lnk files (shortcuts) and performs a **direct copy** instead of a symlink to ensure icon stability and proper path resolution.
+
 3. **The Mapping Process**: When switching to a desktop (e.g., "Work"):
 
    - The script links all **Global Items** first.

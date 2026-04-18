@@ -3,6 +3,7 @@
 
 Persistent()
 SetWorkingDir(A_ScriptDir)
+TraySetIcon("shell32.dll", 162)
 
 VDA_PATH := A_ScriptDir . "\lib\VirtualDesktopAccessor.dll"
 hVirtualDesktopAccessor := DllCall(
@@ -61,6 +62,15 @@ GetDesktopName(num) {
 CreateLink(source, target) {
     if FileExist(target)
         return
+
+    SplitPath(source, , , &ext)
+    if (StrLower(ext) = "lnk") {
+        try {
+            FileCopy(source, target, 0)
+        }
+        return
+    }
+
     isDir := InStr(FileGetAttrib(source), "D") ? 1 : 0
     cmdParam := ' /c mklink ' . (isDir ? '/D ' : '') . ' "' . target . '" "' . source . '"'
     RunWait(A_ComSpec . cmdParam, , "Hide")
@@ -81,10 +91,13 @@ SyncDesktop(currentName) {
             allNames.Push(name)
     }
 
-    loop files, Config.RealDesktop "\*", "FD" {
-        if InStr(FileGetAttrib(A_LoopFileFullPath), "L") {
+    loop files Config.RealDesktop "\*", "FD" {
+        attrib := FileGetAttrib(A_LoopFileFullPath)
+        SplitPath(A_LoopFileFullPath, , , &ext)
+
+        if InStr(attrib, "L") || (StrLower(ext) = "lnk") {
             try {
-                if InStr(FileGetAttrib(A_LoopFileFullPath), "D")
+                if InStr(attrib, "D")
                     DirDelete(A_LoopFileFullPath)
                 else
                     FileDelete(A_LoopFileFullPath)
@@ -92,7 +105,7 @@ SyncDesktop(currentName) {
         }
     }
 
-    loop files, Config.DesktopDataDir "\*", "D" {
+    loop files Config.DesktopDataDir "\*", "D" {
         folderName := A_LoopFileName
         folderPath := A_LoopFileFullPath
 
@@ -113,17 +126,9 @@ SyncDesktop(currentName) {
         }
     }
 
-    loop files, Config.DesktopDataDir "\*", "F" {
+    loop files Config.DesktopDataDir "\*", "F" {
         CreateLink(A_LoopFileFullPath, Config.RealDesktop "\" A_LoopFileName)
     }
-
-    DllCall(
-        "Shell32\SHChangeNotify",
-        "Int", 0x08000000,
-        "UInt", 0,
-        "Ptr", 0,
-        "Ptr", 0
-    )
 }
 
 DllCall(
