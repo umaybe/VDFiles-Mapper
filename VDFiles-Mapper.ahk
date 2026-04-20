@@ -63,31 +63,10 @@ GetDesktopName(num) {
     return name
 }
 
-CreateLink(source, target) {
-    if FileExist(target)
-        return
-
-    SplitPath(source, , , &ext)
-    if (StrLower(ext) = "lnk") {
-        try {
-            FileCopy(source, target, 0)
-        }
-        return
-    }
-
-    isDir := InStr(FileGetAttrib(source), "D") ? 1 : 0
-    cmdParam := ' /c mklink ' . (isDir ? '/D ' : '') . ' "' . target . '" "' . source . '"'
-    RunWait(A_ComSpec . cmdParam, , "Hide")
-}
-
-LinkContents(dir) {
-    loop files, dir "\*", "FD" {
-        CreateLink(A_LoopFileFullPath, Config.RealDesktop "\" A_LoopFileName)
-    }
-}
-
 SyncDesktop(currentName) {
     allNames := []
+    pendingLinks := []
+
     count := GetDesktopCount()
     loop count {
         name := GetDesktopName(A_Index - 1)
@@ -95,6 +74,7 @@ SyncDesktop(currentName) {
             allNames.Push(name)
     }
 
+    ; remove old links
     loop files Config.RealDesktop "\*", "FD" {
         attrib := FileGetAttrib(A_LoopFileFullPath)
         SplitPath(A_LoopFileFullPath, , , &ext)
@@ -109,29 +89,48 @@ SyncDesktop(currentName) {
         }
     }
 
-    loop files Config.DesktopDataDir "\*", "D" {
-        folderName := A_LoopFileName
-        folderPath := A_LoopFileFullPath
-
-        if (folderName = currentName) {
-            LinkContents(folderPath)
+    ; add mklink command to queue
+    QueueLink(source, target) {
+        if FileExist(target)
+            return
+        SplitPath(source, , , &ext)
+        if (StrLower(ext) = "lnk") {
+            try FileCopy(source, target, 0)
+            return
         }
-        else {
+        isDir := InStr(FileGetAttrib(source), "D") ? "/D " : ""
+        pendingLinks.Push('mklink ' . isDir . '"' . target . '" "' . source . '"')
+    }
+
+    loop files Config.DesktopDataDir "\*", "D" {
+        if (A_LoopFileName = currentName) {
+            loop files A_LoopFileFullPath "\*", "FD" {
+                QueueLink(A_LoopFileFullPath, Config.RealDesktop "\" A_LoopFileName)
+            }
+        } else {
             isSpecial := False
             for name in allNames {
-                if (folderName = name) {
+                if (A_LoopFileName = name) {
                     isSpecial := True
                     break
                 }
             }
-            if !isSpecial {
-                CreateLink(A_LoopFileFullPath, Config.RealDesktop "\" A_LoopFileName)
-            }
+            if !isSpecial
+                QueueLink(A_LoopFileFullPath, Config.RealDesktop "\" A_LoopFileName)
         }
     }
 
     loop files Config.DesktopDataDir "\*", "F" {
-        CreateLink(A_LoopFileFullPath, Config.RealDesktop "\" A_LoopFileName)
+        QueueLink(A_LoopFileFullPath, Config.RealDesktop "\" A_LoopFileName)
+    }
+
+    ; create new links
+    if (pendingLinks.Length > 0) {
+        batchCommand := ""
+        for i, cmd in pendingLinks {
+            batchCommand .= cmd . (i = pendingLinks.Length ? "" : " & ")
+        }
+        RunWait(A_ComSpec . ' /c ' . batchCommand, , "Hide")
     }
 }
 
